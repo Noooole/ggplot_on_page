@@ -1,0 +1,78 @@
+---
+title: "ggtrue testing"
+format: pdf
+editor: visual
+---
+
+## ggtrue
+
+Intended purpose is to be able to check how a graph would look on a page rendered with quarto from ggplot - doing this with base R in the future
+
+```{r}
+library(ggplot2)
+library(rmarkdown)
+library(rstudioapi)
+
+xx <- seq(1:100)
+y <- rnorm(length(xx))
+
+p <- ggplot() +
+  geom_point(aes(xx,y))
+
+xx <- seq(1:100)
+y <- rnorm(length(xx))
+
+p <- ggplot() +
+  geom_point(aes(xx, y))
+
+q <- ggplot() +
+  geom_point(aes(y, xx))
+
+ggplot_on_page <- function(..., output = "Rendered_Plots.pdf") {
+  plots <- list(...)  
+  n_plots <- length(plots)
+  
+  if(n_plots == 0) stop("No ggplot objects found")
+  
+  temp_rmd <- tempfile(fileext = ".Rmd")
+  
+
+  rmd_content <- c(
+    "---",
+    "title: 'Rendered Plots'",
+    "output: pdf_document",
+    "---",
+    "",
+    "```{r, echo=FALSE, message=FALSE}",
+    "library(ggplot2)"
+  )
+  
+
+  for (i in seq_along(plots)) {
+    rmd_content <- c(rmd_content,
+                     paste0("print(plots[[", i, "]])"))
+  }
+  
+  rmd_content <- c(rmd_content, "```")
+  
+  writeLines(rmd_content, temp_rmd)
+  
+
+  rmarkdown::render(
+    input = temp_rmd,
+    output_file = basename(output),
+    output_dir  = getwd(),
+    quiet = TRUE,
+    envir = list(plots = plots)
+  )
+  
+  pdf_path <- file.path(getwd(), basename(output))
+  message("Rendered to: ", normalizePath(pdf_path))
+  utils::browseURL(pdf_path)
+}
+
+ggplot_on_page(p)
+ggplot_on_page(p, q)
+ggplot_on_page()
+
+```
